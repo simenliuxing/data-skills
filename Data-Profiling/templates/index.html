@@ -259,7 +259,206 @@ body {
         const BIZ_DATA = null; // BIZ_DATA_PLACEHOLDER — Skill 执行时替换为实际 JSON 数据
     </script>
     <script>
-        // JS 渲染逻辑在 Task 3 中填充
+(function() {
+    'use strict';
+
+    let currentBizLine = 0;
+    let currentProcess = 0;
+
+    function init() {
+        renderHeader();
+        renderSidebar();
+        renderTabs();
+        selectBizLine(0, 0);
+        mermaid.initialize({ startOnLoad: false, theme: 'default' });
+    }
+
+    function renderHeader() {
+        document.getElementById('industry-display').textContent = '行业：' + BIZ_DATA.industry;
+        const depthLabels = { 1: '轻量级', 2: '中等', default: '深度建模' };
+        document.getElementById('depth-display').textContent = '深度：' + (depthLabels[BIZ_DATA.depth] || depthLabels.default) + '(' + BIZ_DATA.depth + ')';
+        document.getElementById('time-display').textContent = '生成：' + BIZ_DATA.generateTime;
+    }
+
+    function renderSidebar() {
+        const nav = document.getElementById('biz-nav');
+        let html = '';
+        BIZ_DATA.businessLines.forEach((line, i) => {
+            html += '<div class="biz-line">';
+            html += '<div class="biz-line-header" onclick="toggleBizLine(' + i + ')">';
+            html += '<span>' + line.name + '</span><span class="arrow">▶</span>';
+            html += '</div>';
+            html += '<div class="process-list" id="processes-' + i + '">';
+            line.processes.forEach((proc, j) => {
+                html += '<div class="process-item" id="proc-' + i + '-' + j + '" onclick="selectProcess(' + i + ',' + j + ')">' + proc.name + '</div>';
+            });
+            html += '</div></div>';
+        });
+        nav.innerHTML = html;
+    }
+
+    function toggleBizLine(index) {
+        const list = document.getElementById('processes-' + index);
+        const header = list.previousElementSibling;
+        list.classList.toggle('show');
+        header.classList.toggle('expanded');
+    }
+
+    function selectBizLine(bizIndex, procIndex) {
+        currentBizLine = bizIndex;
+        currentProcess = procIndex;
+        document.querySelectorAll('.process-item').forEach(el => el.classList.remove('active'));
+        const el = document.getElementById('proc-' + bizIndex + '-' + procIndex);
+        if (el) el.classList.add('active');
+        const line = BIZ_DATA.businessLines[bizIndex];
+        const proc = line.processes[procIndex];
+        renderProcessTab(proc);
+        renderSchemaTab(line, proc);
+        renderDataTab(line, proc);
+        renderERTab();
+    }
+
+    function selectProcess(bizIndex, procIndex) {
+        selectBizLine(bizIndex, procIndex);
+    }
+
+    function renderTabs() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            });
+        });
+    }
+
+    function renderProcessTab(proc) {
+        const container = document.getElementById('tab-process');
+        let html = '<div class="card"><h3>' + proc.name + '</h3>';
+        html += '<p>' + proc.description + '</p></div>';
+        if (proc.flowchart) {
+            html += '<div class="card"><h3>流程图</h3>';
+            html += '<div class="mermaid">' + proc.flowchart + '</div></div>';
+        }
+        html += '<div class="card"><h3>涉及数据表</h3><ul>';
+        proc.tables.forEach(t => { html += '<li>' + t + '</li>'; });
+        html += '</ul></div>';
+        container.innerHTML = html;
+        mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
+    }
+
+    function renderSchemaTab(line, proc) {
+        const container = document.getElementById('tab-schema');
+        let html = '';
+        const tables = line.tables.filter(t => proc.tables.includes(t.name));
+        tables.forEach(table => {
+            html += '<div class="card"><h3>' + table.name + ' <span style="color:#8c8c8c;font-size:12px;font-weight:normal">' + table.comment + '</span></h3>';
+            html += '<table><thead><tr><th>字段名</th><th>类型</th><th>说明</th></tr></thead><tbody>';
+            table.columns.forEach(col => {
+                html += '<tr><td>' + col.name;
+                if (col.isPk) html += ' <span class="pk-badge">PK</span>';
+                html += '</td><td><span class="type-tag">' + col.type + '</span></td>';
+                html += '<td>' + col.comment + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            html += '<div style="margin-top:12px"><div class="code-block"><button class="copy-btn" onclick="copyDDL(this)">复制</button><pre><code class="language-sql">' + escapeHtml(table.ddl) + '</code></pre></div></div>';
+            html += '</div>';
+        });
+        container.innerHTML = html;
+        container.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+    }
+
+    function renderDataTab(line, proc) {
+        const container = document.getElementById('tab-data');
+        let html = '';
+        const tables = line.tables.filter(t => proc.tables.includes(t.name));
+        tables.forEach(table => {
+            html += '<div class="card"><h3>' + table.name + ' - 模拟数据 (' + table.data.length + ' 条)</h3>';
+            if (table.data.length > 0) {
+                html += '<div class="data-table-wrap"><table><thead><tr>';
+                table.columns.forEach(col => { html += '<th>' + col.name + '</th>'; });
+                html += '</tr></thead><tbody>';
+                table.data.forEach(row => {
+                    html += '<tr>';
+                    table.columns.forEach(col => { html += '<td>' + escapeHtml(String(row[col.name] ?? '')) + '</td>'; });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+                html += '<div style="margin-top:12px"><div class="code-block"><button class="copySQL(this)">复制</button><pre><code class="language-sql">' + generateInserts(table) + '</code></pre></div></div>';
+            }
+            html += '</div>';
+        });
+        container.innerHTML = html;
+        container.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+    }
+
+    function renderERTab() {
+        const container = document.getElementById('tab-er');
+        let erDiagram = 'erDiagram\n';
+        BIZ_DATA.businessLines.forEach(line => {
+            if (line.relations) {
+                line.relations.forEach(rel => {
+                    const connector = rel.type === '1:1' ? '||--||' : '||--o{';
+                    erDiagram += '    ' + rel.from + ' ' + connector + ' ' + rel.to + ' : "' + rel.field + '"\n';
+                });
+            }
+        });
+        container.innerHTML = '<div class="card"><h3>ER 关系图</h3><div class="mermaid">' + erDiagram + '</div></div>';
+        mermaid.run({ nodes: container.querySelectorAll('.mermaid') });
+        updateStats();
+    }
+
+    function updateStats() {
+        let tableCount = 0;
+        BIZ_DATA.businessLines.forEach(line => { tableCount += line.tables.length; });
+        document.getElementById('stats').textContent =
+            '📦 共 ' + BIZ_DATA.businessLines.length + ' 个业务线 · ' + tableCount + ' 张表 · 深度：' + BIZ_DATA.depth + ' · 生成时间：' + BIZ_DATA.generateTime;
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function generateInserts(table) {
+        if (!table.data || table.data.length === 0) return '-- 无数据';
+        let sql = '';
+        table.data.forEach(row => {
+            const cols = table.columns.map(c => c.name).join(', ');
+            const vals = table.columns.map(c => {
+                const v = row[c.name];
+                if (v === null || v === undefined) return 'NULL';
+                if (typeof v === 'number') return v;
+                return "'" + String(v).replace(/'/g, "''") + "'";
+            }).join(', ');
+            sql += 'INSERT INTO ' + table.name + ' (' + cols + ') VALUES (' + vals + ');\n';
+        });
+        return sql;
+    }
+
+    window.copyDDL = function(btn) {
+        const code = btn.nextElementSibling.querySelector('code').textContent;
+        navigator.clipboard.writeText(code).then(() => { btn.textContent = '已复制'; setTimeout(() => { btn.textContent = '复制'; }, 1500); });
+    };
+
+    window.copySQL = function(btn) {
+        const code = btn.nextElementSibling.querySelector('code').textContent;
+        navigator.clipboard.writeText(code).then(() => { btn.textContent = '已复制'; setTimeout(() => { btn.textContent = '复制'; }, 1500); });
+    };
+
+    document.getElementById('export-btn').addEventListener('click', function() {
+        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'biz-scenario-' + BIZ_DATA.industry + '-' + BIZ_DATA.depth + '.html';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    init();
+})();
     </script>
 </body>
 </html>
