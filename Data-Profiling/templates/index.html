@@ -31,9 +31,56 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .header h1 { font-size: 18px; font-weight: 600; }
+
+.header-controls { display: flex; gap: 12px; align-items: center; }
+
+.header-controls label { font-size: 13px; color: #595959; display: flex; align-items: center; gap: 6px; }
+
+.header-controls input[type="text"] {
+    padding: 6px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 140px;
+}
+
+.header-controls input[type="text"]:focus { border-color: #1890ff; outline: none; box-shadow: 0 0 0 2px rgba(24,144,255,0.1); }
+
+.header-controls select {
+    padding: 6px 10px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 13px;
+    background: #fff;
+}
+
+.header-controls select:focus { border-color: #1890ff; outline: none; }
+
+.btn {
+    padding: 6px 16px;
+    background: #fff;
+    color: #595959;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.btn:hover { border-color: #1890ff; color: #1890ff; }
+.btn:focus-visible { outline: 2px solid #1890ff; outline-offset: 2px; }
+
+.btn-primary {
+    background: #1890ff;
+    color: #fff;
+    border-color: #1890ff;
+}
+
+.btn-primary:hover { background: #40a9ff; border-color: #40a9ff; color: #fff; }
 
 .header-info { display: flex; gap: 16px; align-items: center; font-size: 13px; color: #8c8c8c; }
 
@@ -238,11 +285,16 @@ body {
     <div id="app">
         <header class="header">
             <h1>📊 业务场景模拟器</h1>
-            <div class="header-info">
+            <div class="header-controls">
+                <label>行业：<input type="text" id="industry-input" placeholder="如：电商、金融、医疗" value=""></label>
+                <label>深度：<select id="depth-select"><option value="1">1 - 轻量级</option><option value="2" selected>2 - 中等</option><option value="3">3 - 深度建模</option></select></label>
+                <button id="generate-btn" class="btn btn-primary">▶ 生成</button>
+                <button id="export-btn" class="btn">导出 HTML</button>
+            </div>
+            <div class="header-info" id="header-info" style="display:none;">
                 <span id="industry-display"></span>
                 <span id="depth-display"></span>
                 <span id="time-display"></span>
-                <button id="export-btn" class="btn">导出 HTML</button>
             </div>
         </header>
         <div class="main-container">
@@ -291,10 +343,13 @@ body {
     }
 
     function renderHeader() {
+        document.getElementById('industry-input').value = BIZ_DATA.industry;
+        document.getElementById('depth-select').value = BIZ_DATA.depth >= 3 ? '3' : String(BIZ_DATA.depth);
         document.getElementById('industry-display').textContent = '行业：' + BIZ_DATA.industry;
         const depthLabels = { 1: '轻量级', 2: '中等', default: '深度建模' };
         document.getElementById('depth-display').textContent = '深度：' + (depthLabels[BIZ_DATA.depth] || depthLabels.default) + '(' + BIZ_DATA.depth + ')';
         document.getElementById('time-display').textContent = '生成：' + BIZ_DATA.generateTime;
+        document.getElementById('header-info').style.display = 'flex';
     }
 
     function renderSidebar() {
@@ -485,6 +540,14 @@ body {
         const code = btn.nextElementSibling.querySelector('code').textContent;
         navigator.clipboard.writeText(code).then(() => { btn.textContent = '已复制'; setTimeout(() => { btn.textContent = '复制'; }, 1500); });
     };
+
+    document.getElementById('generate-btn').addEventListener('click', function() {
+        var industry = document.getElementById('industry-input').value.trim();
+        var depth = parseInt(document.getElementById('depth-select').value);
+        if (!industry) { alert('请输入行业名称'); return; }
+        if (industry === BIZ_DATA.industry && depth === BIZ_DATA.depth) { alert('当前已是该行业深度' + depth + '的场景，无需重新生成'); return; }
+        alert('请在对话中发送：帮我生成' + industry + '行业的业务场景，深度' + depth + '\n\n静态网页无法直接调用 AI 生成，需重新执行 Skill。');
+    });
 
     document.getElementById('export-btn').addEventListener('click', function() {
         const dataJson = JSON.stringify(BIZ_DATA, null, 2);
