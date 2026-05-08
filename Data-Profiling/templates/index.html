@@ -436,6 +436,9 @@ body {
         return sql;
     }
 
+    window.toggleBizLine = toggleBizLine;
+    window.selectProcess = selectProcess;
+
     window.copyDDL = function(btn) {
         const code = btn.nextElementSibling.querySelector('code').textContent;
         navigator.clipboard.writeText(code).then(() => { btn.textContent = '已复制'; setTimeout(() => { btn.textContent = '复制'; }, 1500); });
