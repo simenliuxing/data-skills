@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>业务场景模拟器</title>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
     <style>
         /* CSS 在 Task 2 中填充 */
     </style>
@@ -27,17 +27,17 @@
                 <nav id="biz-nav"></nav>
             </aside>
             <main class="content">
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="process">业务流程</button>
-                    <button class="tab-btn" data-tab="schema">表结构</button>
-                    <button class="tab-btn" data-tab="data">模拟数据</button>
-                    <button class="tab-btn" data-tab="er">ER图</button>
+                <div class="tabs" role="tablist">
+                    <button id="tab-btn-process" class="tab-btn active" type="button" role="tab" aria-selected="true" data-tab="process">业务流程</button>
+                    <button id="tab-btn-schema" class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="schema">表结构</button>
+                    <button id="tab-btn-data" class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="data">模拟数据</button>
+                    <button id="tab-btn-er" class="tab-btn" type="button" role="tab" aria-selected="false" data-tab="er">ER图</button>
                 </div>
                 <div class="tab-content">
-                    <div id="tab-process" class="tab-pane active"></div>
-                    <div id="tab-schema" class="tab-pane"></div>
-                    <div id="tab-data" class="tab-pane"></div>
-                    <div id="tab-er" class="tab-pane"></div>
+                    <div id="tab-process" class="tab-pane active" role="tabpanel" aria-labelledby="tab-btn-process"></div>
+                    <div id="tab-schema" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-schema"></div>
+                    <div id="tab-data" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-data"></div>
+                    <div id="tab-er" class="tab-pane" role="tabpanel" aria-labelledby="tab-btn-er"></div>
                 </div>
             </main>
         </div>
@@ -48,7 +48,7 @@
 
     <script>
         // 业务数据注入点 - Skill 执行时替换
-        const BIZ_DATA = /* BIZ_DATA_PLACEHOLDER */;
+        const BIZ_DATA = null; // BIZ_DATA_PLACEHOLDER — Skill 执行时替换为实际 JSON 数据
     </script>
     <script>
         // JS 渲染逻辑在 Task 3 中填充
