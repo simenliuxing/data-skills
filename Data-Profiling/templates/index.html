@@ -289,7 +289,6 @@ body {
                 <label>行业：<input type="text" id="industry-input" placeholder="如：电商、金融、医疗" value=""></label>
                 <label>深度：<select id="depth-select"><option value="1">1 - 轻量级</option><option value="2" selected>2 - 中等</option><option value="3">3 - 深度建模</option></select></label>
                 <button id="generate-btn" class="btn btn-primary">▶ 生成</button>
-                <button id="export-btn" class="btn">导出 HTML</button>
             </div>
             <div class="header-info" id="header-info" style="display:none;">
                 <span id="industry-display"></span>
@@ -549,19 +548,7 @@ body {
         alert('请在对话中发送：帮我生成' + industry + '行业的业务场景，深度' + depth + '\n\n静态网页无法直接调用 AI 生成，需重新执行 Skill。');
     });
 
-    document.getElementById('export-btn').addEventListener('click', function() {
-        const dataJson = JSON.stringify(BIZ_DATA, null, 2);
-        const now = new Date();
-        const ts = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
-        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'biz-scenario-' + BIZ_DATA.industry + '-' + ts + '.html';
-        a.click();
-        URL.revokeObjectURL(url);
-    });
+
 
     init();
 })();
